@@ -6,9 +6,9 @@ module.exports = {
   },
   extends: [
     "eslint:recommended",
-    "google",
   ],
   rules: {
-    quotes: ["error", "double"],
+    'indent': 'off',
+    'quotes': 'off'
   },
 };
