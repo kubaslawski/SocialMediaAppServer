@@ -23,6 +23,10 @@ exports.getAllTweets = (req, res) => {
 }
 
 exports.postTweet = (req, res)=> {
+    if (req.body.body.trim() === '') {
+        return res.status(400).json({ body: 'Body must not be empty' });
+    }
+    
     const newTweet = {
         body: req.body.body, 
         userHandle: req.user.handle,

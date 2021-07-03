@@ -4,7 +4,7 @@ const app = require('express')();
 const FbAuth = require('./util/FbAuth');
 
 const {getAllTweets, postTweet} = require('./handlers/tweets');
-const {signUp, login} = require('./handlers/users');
+const {signUp, login, uploadImage} = require('./handlers/users');
 
 
 //Tweets routes
@@ -13,5 +13,6 @@ app.post('/tweet', FbAuth, postTweet);
 //User routes
 app.post('/signup', signUp);
 app.post('/login', login)
+app.post('/user/image', FbAuth, uploadImage)
 
 exports.api = functions.region('europe-west1').https.onRequest(app);
