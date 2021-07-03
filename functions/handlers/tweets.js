@@ -30,13 +30,18 @@ exports.postTweet = (req, res) => {
     const newTweet = {
         body: req.body.body, 
         userHandle: req.user.handle,
-        createdAt: new Date().toISOString()
+        userImage: req.user.imageUrl,
+        createdAt: new Date().toISOString(),
+        likeCount: 0,
+        commentCount: 0
     };
 
     db.collection('tweets')
         .add(newTweet)
         .then(doc => {
-            res.json({ message: `document ${doc.id} has been created successfully` });
+            const resTweet = newTweet;
+            resTweet.tweetId = doc.id;
+            res.json({resTweet});
         })
         .catch(err => {
             res.status(500).json({error: 'Something went wrong'});
@@ -59,9 +64,9 @@ exports.getTweet = (req, res) => {
                 .where('tweetId', '==', req.params.tweetId)
                 .get();
         })
-        .then(data => {
+        .then((data) => {
             tweetData.comments = [];
-            data.forEach(doc => {
+            data.forEach((doc) => {
                 tweetData.comments.push(doc.data());
             });
             return res.json(tweetData)
@@ -88,13 +93,126 @@ exports.commentTweet = (req, res) => {
             if(!doc.exists){
                 return res.status(404).json({error: 'Tweet not found'})
             }
-            return db.collection('comments').add(newComment);
+            return doc.ref.update({commentCount: doc.data().commentCount + 1});
         })
         .then(() => {
-            res.json(newComment);
+            return db.collection('comments').add(newComment);
         })
         .catch(err => {
             console.log(err);
             res.status(500).json({error: 'Something went wrong'})
+        })
+}
+
+exports.likeTweet = (req, res) => {
+    const likeDocument = db
+      .collection('likes')
+      .where('userHandle', '==', req.user.handle)
+      .where('tweetId', '==', req.params.tweetId)
+      .limit(1);
+  
+    const tweetDocument = db.doc(`/tweets/${req.params.tweetId}`);
+  
+    let tweetData;
+  
+    tweetDocument
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          tweetData = doc.data();
+          tweetData.tweetId = doc.id;
+          return likeDocument.get();
+        } else {
+          return res.status(404).json({ error: 'Tweet not found' });
+        }
+      })
+      .then((data) => {
+        if (data.empty) {
+          return db
+            .collection('likes')
+            .add({
+              tweetId: req.params.tweetId,
+              userHandle: req.user.handle
+            })
+            .then(() => {
+              tweetData.likeCount++;
+              return tweetDocument.update({ likeCount: tweetData.likeCount });
+            })
+            .then(() => {
+              return res.json(tweetData);
+            });
+        } else {
+          return res.status(400).json({ error: 'Tweet already liked' });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        return res.status(500).json({ error: err.code });
+      });
+};
+
+exports.unlikeTweet = (req, res) => {
+    const likeDocument = db
+        .collection('likes')
+        .where('userHandle', '==', req.user.handle)
+        .where('tweetId', '==', req.params.tweetId)
+        .limit(1);
+
+    const tweetDocument = db.doc(`/tweets/${req.params.tweetId}`);
+
+    let tweetData;
+
+    tweetDocument
+        .get()
+        .then((doc) => {
+        if (doc.exists) {
+            tweetData = doc.data();
+            tweetData.tweetId = doc.id;
+            return likeDocument.get();
+        } else {
+            return res.status(404).json({ error: 'Tweet not found' });
+        }
+        })
+        .then((data) => {
+        if (data.empty) {
+            return res.status(400).json({ error: 'Tweet not liked' });
+        } else {
+            return db
+            .doc(`/likes/${data.docs[0].id}`)
+            .delete()
+            .then(() => {
+                tweetData.likeCount--;
+                return tweetDocument.update({ likeCount: tweetData.likeCount });
+            })
+            .then(() => {
+                res.json(tweetData);
+            });
+        }
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).json({ error: err.code });
+        });
+};
+
+exports.deleteTweet = (req, res) => {
+    const document = db.doc(`/tweets/${req.params.tweetId}`);
+    document.get()
+        .then(doc => {
+            if(!doc.exists){
+                return res.status(400).json({error: 'Tweet does not exist'})
+            }
+            if(doc.data().userHandle !== req.user.handle){
+                return res.status(403).json({error: 'Unauthorized'})
+            } else {
+                return document.delete();
+            }
+        })
+        .then(() => {
+            res.json({message: "Tweet has been deleted"});
+        })
+        .catch(err => {
+            console.error(err);
+            return res.status(500).json({error: err.code})
         })
 }

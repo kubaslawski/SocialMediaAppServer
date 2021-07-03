@@ -8,6 +8,9 @@ const {
     postTweet, 
     getTweet,
     commentTweet, 
+    likeTweet,
+    unlikeTweet,
+    deleteTweet
 } = require('./handlers/tweets');
 const {
     signUp,
@@ -20,9 +23,9 @@ const {
 app.get('/tweets', getAllTweets);
 app.post('/tweet', FbAuth, postTweet);
 app.get(`/tweet/:tweetId`, getTweet);
-//delete tweet 
-//like a tweet 
-//unlike a tweet
+app.delete('/tweet/:tweetId/delete', FbAuth, deleteTweet);
+app.get('/tweet/:tweetId/like', FbAuth, likeTweet);
+app.get('/tweet/:tweetId/unlike', FbAuth, unlikeTweet);
 app.post('/tweet/:tweetId/comment', FbAuth, commentTweet);
 
 //User routes
