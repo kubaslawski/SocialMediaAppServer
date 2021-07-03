@@ -6,7 +6,6 @@ const firebase = require('firebase');
 firebase.initializeApp(config);
 
 const {validateSignUpData, validateLoginData, reduceUserDetails} = require('../util/validators');
-const { user, UserRecordMetadata } = require('firebase-functions/lib/providers/auth');
 
 exports.signUp = (req, res) => {
     const newUser = {
