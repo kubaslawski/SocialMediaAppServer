@@ -23,6 +23,7 @@ firebase.initializeApp(config);
 
 const db = admin.firestore();
 
+//Get all tweets
 app.get('/tweets', (req, res) => {
     db
     .collection("tweets")
@@ -45,6 +46,7 @@ app.get('/tweets', (req, res) => {
     .catch((err) => console.error(err));
 })
 
+//Post a tweet
 app.post('/tweet', (req, res)=> {
     const newTweet = {
         body: req.body.body, 
@@ -53,15 +55,15 @@ app.post('/tweet', (req, res)=> {
     };
 
     db
-        .collection('tweets')
-        .add(newTweet)
-        .then(doc => {
-            res.json({ message: `document ${doc.id} has been created successfully` });
-        })
-        .catch(err => {
-            res.status(500).json({error: 'Something went wrong'});
-            console.error(err);
-        });
+    .collection('tweets')
+    .add(newTweet)
+    .then(doc => {
+        res.json({ message: `document ${doc.id} has been created successfully` });
+    })
+    .catch(err => {
+        res.status(500).json({error: 'Something went wrong'});
+        console.error(err);
+    });
 })
 
 //Sign up 
@@ -76,19 +78,19 @@ app.post('/signup', (req, res) => {
     //Validation to be done 
     let token, userId;
     db.doc(`/users/${newUser.handle}`).get()
-    .then(doc => {
+    .then((doc) => {
         if(doc.exists){
             return res.status(400).json({handle: 'this handle is already taken'})
         } else {
             return firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
         }
     })
-    .then(data => {
+    .then((data) => {
+        userId = data.user.uid;
         return data.user.getIdToken();
     })
-    .then(token => {
-        token = token;
-        userId = data.user.uid;
+    .then((idToken) => {
+        token = idToken;
         const userCredentials = {
             handle: newUser.handle, 
             email: newUser.email,
